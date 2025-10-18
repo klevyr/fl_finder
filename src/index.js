@@ -1,8 +1,12 @@
 // server.js
 const express = require('express');
+
+require('dotenv').config();
 const { JSDOM } = require('jsdom');
+const Database = require('better-sqlite3');
 const app = express();
 
+// setting
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -13,6 +17,10 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   next();
 });
+
+// Database
+const db = new Database(process.env.DB_NAME);
+
 
 function parseHTMLContent(htmlString) {
   const dom = new JSDOM(htmlString);
@@ -101,7 +109,7 @@ app.post('/endpoint', (req, res) => {
   });
 });
 
-app.listen(5000, () => {
+app.listen(process.env.APP_PORT, () => {
   console.log('🚀 API corriendo en http://localhost:5000');
 });
 
