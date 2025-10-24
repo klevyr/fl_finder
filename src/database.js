@@ -1,86 +1,81 @@
 // database.js - Módulo de base de datos
-require('dotenv').config();
+import dotenv from 'dotenv';
 
-const Database = require('better-sqlite3');
-const { info } = require('console');
+import Database from 'better-sqlite3';
+import { info } from 'console';
 
-const fs = require('fs');
-const path = require('path');
+import { existsSync } from 'fs';
+import path from 'path';
 
 class DatabaseManager {
   constructor() {
     // Verificar si es la primera vez
-    const esNuevaDB = !fs.existsSync(process.env.DB_NAME);
+    const isNewDB = !existsSync(process.env.DB_NAME);
     
     // Crear o abrir la base de datos
     this.db = new Database(process.env.DB_NAME);
-    
-    // Habilitar claves foráneas
     this.db.pragma('foreign_keys = ON');
     
-    // Si es nueva, inicializar
-    if (esNuevaDB) {
+    if (isNewDB) {
       console.log('🆕 Base de datos nueva detectada. Inicializando...');
-      this.inicializar();
+      this.initDB();
     } else {
       console.log('✅ Conectado a base de datos existente');
     }
   }
 
   // Se ejecuta SOLO la primera vez
-  inicializar() {
+  initDB() {
     console.log('📝 Creando estructura de tablas...');
     
     // Crear tablas
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS usuarios (:""
+      CREATE TABLE IF NOT EXISTS freelance_joblist (:""
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        edad INTEGER,
-        fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
+        jobid TEXT NOT NULL
+        date_create DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS configuracion (
-        clave TEXT PRIMARY KEY,
-        valor TEXT NOT NULL
+      CREATE TABLE IF NOT EXISTS freelance_config (
+        id TEXT PRIMARY KEY,
+        value TEXT NOT NULL
       );
 
-      CREATE INDEX IF NOT EXISTS idx_email ON usuarios(email);
+      CREATE INDEX IF NOT EXISTS idx_jobid ON freelance_joblist(jobid);
     `);
 
     // Insertar datos iniciales (seed data)
     const insertConfig = this.db.prepare(
-      'INSERT INTO configuracion (clave, valor) VALUES (?, ?)'
+      'INSERT INTO freelance_config (id, value) VALUES (?, ?)'
     );
     
     insertConfig.run('version_db', '1.0');
-    insertConfig.run('fecha_creacion', new Date().toISOString());
+    insertConfig.run('db_created_date', new Date().toISOString());
     
     console.log('✅ Base de datos inicializada correctamente');
   }
 
   // CRUD de usuarios
-  registrarUsuario(nombre, email, edad) {
+  setFreelanceJob(jobid) {
     try {
       const stmt = this.db.prepare(
-        'INSERT INTO usuarios (nombre, email, edad) VALUES (?, ?, ?)'
+        'INSERT INTO freelance_joblist (jobid) VALUES (?)'
       );
-      const info = stmt.run(nombre, email, edad);
+      const info = stmt.run(jobid);
       return { success: true, id: info.lastInsertRowid };
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
 
-  consultarPorId(id) {
-    const stmt = this.db.prepare('SELECT * FROM usuarios WHERE id = ?');
-    return stmt.get(id);
+  getJobId(jid) {
+    const stmt = this.db.prepare('SELECT * FROM freelance_joblist WHERE jobid = ?');
+    return stmt.get(jid);
   }
 
 
   // Método para cerrar la conexión
-  cerrar() {
+  closeDb() {
     this.db.close();
     console.log('🔒 Conexión cerrada');
   }
@@ -95,4 +90,4 @@ function getDatabase() {
   return dbInstance;
 }
 
-module.exports = { getDatabase, DatabaseManager };
+export default { getDatabase, DatabaseManager };
