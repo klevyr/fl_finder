@@ -1,14 +1,16 @@
 // server.js
-const express = require('express');
+import express, { json, urlencoded } from 'express';
+import dotenv from 'dotenv';
+import { JSDOM } from 'jsdom';
+import { getDatabase } from './database.js';
 
-require('dotenv').config();
-const { JSDOM } = require('jsdom');
-const Database = require('better-sqlite3');
+// dotenv
+dotenv.config();
+// create app
 const app = express();
-
 // setting
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(json({ limit: '50mb' }));
+app.use(urlencoded({ limit: '50mb', extended: true }));
 
 // Importante: Habilitar CORS para localhost
 app.use((req, res, next) => {
@@ -19,8 +21,7 @@ app.use((req, res, next) => {
 });
 
 // Database
-const db = new Database(process.env.DB_NAME);
-
+const db = getDatabase();
 
 function parseHTMLContent(htmlString) {
   const dom = new JSDOM(htmlString);
@@ -98,10 +99,22 @@ function extractTaskDescription(element, index, window) {
   return task;
 }
 
+
+function processAndRegisterTask(task) {
+  console.log(task.uid, task['uid']);
+
+  return task;
+}
+
+
 app.post('/endpoint', (req, res) => {
   console.log('📥 Datos recibidos' /*, req.body.html*/);
-  joblist = parseHTMLContent(req.body.html);
-  console.log(joblist);
+  const joblist = parseHTMLContent(req.body.html);
+  
+  const newTasks = joblist.filter( t => processAndRegisterTask(t));
+
+  console.log(newTasks);
+
   res.json({
     success: true,
     message: 'Datos recibidos correctamente',

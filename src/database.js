@@ -1,12 +1,12 @@
 // database.js - Módulo de base de datos
 import dotenv from 'dotenv';
-
 import Database from 'better-sqlite3';
-import { info } from 'console';
-
 import { existsSync } from 'fs';
-import path from 'path';
 
+// dotenv
+dotenv.config();
+
+// Database class
 class DatabaseManager {
   constructor() {
     // Verificar si es la primera vez
@@ -30,9 +30,9 @@ class DatabaseManager {
     
     // Crear tablas
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS freelance_joblist (:""
+      CREATE TABLE IF NOT EXISTS freelance_joblist (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        jobid TEXT NOT NULL
+        jobid TEXT NOT NULL,
         date_create DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -83,11 +83,12 @@ class DatabaseManager {
 // Exportar instancia singleton
 let dbInstance = null;
 
-function getDatabase() {
+export function getDatabase() {
   if (!dbInstance) {
     dbInstance = new DatabaseManager();
   }
   return dbInstance;
 }
 
-export default { getDatabase, DatabaseManager };
+export { DatabaseManager };
+
