@@ -59,7 +59,7 @@ class DatabaseManager {
   setFreelanceJob(jobid) {
     try {
       const stmt = this.db.prepare(
-        'INSERT INTO freelance_joblist (jobid) VALUES (?)'
+        'INSERT OR IGNORE INTO freelance_joblist (jobid) VALUES (?)'
       );
       const info = stmt.run(jobid);
       return { success: true, id: info.lastInsertRowid };
@@ -71,6 +71,11 @@ class DatabaseManager {
   getJobId(jid) {
     const stmt = this.db.prepare('SELECT * FROM freelance_joblist WHERE jobid = ?');
     return stmt.get(jid);
+  }
+
+  existsJobId(jid) {
+    const exists = this.getJobId(jid);
+    return exists ? true : false;
   }
 
 

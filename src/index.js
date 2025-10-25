@@ -101,9 +101,17 @@ function extractTaskDescription(element, index, window) {
 
 
 function processAndRegisterTask(task) {
-  console.log(task.uid, task['uid']);
+  // console.log(task.uid, task['uid']);
+  const jobid = task.uid;
+  const exists = db.existsJobId(jobid);
 
-  return task;
+  // si no existe registar
+  if (! exists) {
+    console.log("insert jobid", jobid)
+    //db.setFreelanceJob(jobid);
+  }
+
+  return exists ? null : task;
 }
 
 
