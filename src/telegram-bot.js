@@ -14,13 +14,21 @@ class TelegramBot {
     const {
       parseMode = 'HTML', // HTML o Markdown
       disableWebPagePreview = false,
-      disableNotification = false
+      disableNotification = false,
+      buttonUrl = false
     } = opciones;
 
     const data = {
       chat_id: this.chatId,
       text: texto,
       parse_mode: parseMode,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🔗 Ver Oferta', url: buttonUrl}
+          ]
+        ]
+      },
       disable_web_page_preview: disableWebPagePreview,
       disable_notification: disableNotification
     };
@@ -36,7 +44,7 @@ class TelegramBot {
   // Enviar trabajo individual
   async enviarTrabajo(job) {
     const mensaje = this._formatearTrabajo(job);
-    return await this.enviarMensaje(mensaje);
+    return await this.enviarMensaje(mensaje, { buttonUrl: `https://www.upwork.com${job.link}` });
   }
 
   // Enviar múltiples trabajos
@@ -68,15 +76,12 @@ ${job.attibutesItems.join(' &#183; ') || ''}
 
 🤵 About Client
 ⭐ ${job.clientFeedback} &#183; ${job.clientPaymentStatus} &#183; ${job.clientSpend}
-🌎 ${job.clieneCountry} 🚀 ${job.proposals}
+🌎 ${job.clientCountry} 🚀 ${job.proposals}
 
 Description
 <blockquote>${job.jobDescriptionText}</blockquote>
 
 ⏳ ${job.postedOn}
-
-
-${job.link ? `🔗 <a href="${job.url}">Ver trabajo</a>` : ''}
     `.trim();
   }
 

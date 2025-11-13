@@ -85,7 +85,7 @@ function extractTaskDescription(element, index, window) {
   const payment_status = element.querySelector('[data-test="payment-verification-status"]');
   task.clientPaymentStatus = payment_status ? payment_status.textContent.trim() : null;
 
-  const client_spend = element.querySelector('[data-test="formatted-amount"]');
+  const client_spend = element.querySelector('[data-test="client-spendings"]');
   task.clientSpend = client_spend ? client_spend.textContent.trim() : null;
 
   const client_feedback = element.querySelector('[data-ev-sublocation="!rating"]');
@@ -105,13 +105,14 @@ function extractTaskDescription(element, index, window) {
 
 
 function processAndRegisterTask(task) {
-  // console.log(task.uid, task['uid']);
   const jobid = task.uid;
   const exists = db.existsJobId(jobid);
   // si no existe registar
   if (! exists) {
-    console.log("insert jobid", jobid)
+    console.log("register new jobid", jobid)
     db.setFreelanceJob(jobid);
+  }else{
+    console.log(`jobid ${jobid} already exists!`);
   }
   return exists ? null : task;
 }
@@ -142,22 +143,9 @@ async function notificationManager(newTasks) {
 app.post('/endpoint', (req, res) => {
   console.log('📥 Datos recibidos' /*, req.body.html*/);
   const joblist = parseHTMLContent(req.body.html);
-  
   const newTasks = joblist.filter( t => processAndRegisterTask(t));
-
   // console.log(newTasks.jobTitle);
-
   notificationManager(newTasks);
-
-  /**
-  newTasks.forEach((elem) => { 
-    const res = bot.enviarMensaje(elem, {
-      agrupar: false,
-      delayEntreMensajes: 1500,
-      timestamp: false
-    });
-  });
-  */
   res.json({
     success: true,
     message: 'Datos recibidos correctamente',
