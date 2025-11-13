@@ -3,11 +3,14 @@ import express, { json, urlencoded } from 'express';
 import dotenv from 'dotenv';
 import { JSDOM } from 'jsdom';
 import { getDatabase } from './database.js';
+import TelegramBot from './telegram-bot.js';
 
 // dotenv
 dotenv.config();
 // create app
 const app = express();
+const bot = new TelegramBot(process.env.TG_BOT_API_KEY, process.env.TG_CHANNEL_ID);
+
 // setting
 app.use(json({ limit: '50mb' }));
 app.use(urlencoded({ limit: '50mb', extended: true }));
@@ -46,7 +49,8 @@ function extractTaskDescription(element, index, window) {
     classes: element.className || null//,
     // content: element.innerHTML
   };
-
+  const joblink = element.querySelector('[data-ev-label="link"]');
+  task.link = joblink.href;
   // date interval 
   const posted_on = element.querySelector('[data-test="posted-on"]');
   task.postedOn = posted_on ? posted_on.textContent.trim() : null;
@@ -64,7 +68,7 @@ function extractTaskDescription(element, index, window) {
   task.budget = budget ? budget.textContent.trim() : null;
 
   const duration = element.querySelector('[data-test="duration"]');
-  task.duration = duration ? duration.textContent.trim() : null;
+  task.duration = duration ? duration.textContent.trim() : false;
 
   const job_description = element.querySelector('[data-test="job-description-text"]');
   task.jobDescriptionText = job_description ? job_description.textContent.trim() : null;
@@ -104,15 +108,35 @@ function processAndRegisterTask(task) {
   // console.log(task.uid, task['uid']);
   const jobid = task.uid;
   const exists = db.existsJobId(jobid);
-
   // si no existe registar
   if (! exists) {
     console.log("insert jobid", jobid)
-    //db.setFreelanceJob(jobid);
+    db.setFreelanceJob(jobid);
   }
-
   return exists ? null : task;
 }
+
+async function notificationManager(newTasks) {
+  for (let i = 0; i < newTasks.length; i++) {
+    const elem = newTasks[i];
+    try {
+      const result = await bot.enviarTrabajo(elem);
+      if (result.success) {
+        console.log(`${i+1}/${newTasks.length}: jobid > ${elem.uid}`);
+      }else{
+        console.error(`Error: ${elem.jobid}: ${result.error}`);
+      }
+      if (i < newTasks.length - 1){
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    }
+    catch (error) {
+      console.error(`Error: ${elem.jobid}:: ${error.message}`);
+    }
+  }
+}
+
+
 
 
 app.post('/endpoint', (req, res) => {
@@ -121,8 +145,19 @@ app.post('/endpoint', (req, res) => {
   
   const newTasks = joblist.filter( t => processAndRegisterTask(t));
 
-  console.log(newTasks);
+  // console.log(newTasks.jobTitle);
 
+  notificationManager(newTasks);
+
+  /**
+  newTasks.forEach((elem) => { 
+    const res = bot.enviarMensaje(elem, {
+      agrupar: false,
+      delayEntreMensajes: 1500,
+      timestamp: false
+    });
+  });
+  */
   res.json({
     success: true,
     message: 'Datos recibidos correctamente',
